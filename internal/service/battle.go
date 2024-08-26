@@ -43,6 +43,7 @@ func (bs *BattleService) CreateBattle(playerNickname, enemyNickname string) (*en
 	var result string
 
 	if dice <= 3 {
+		// Inimigo ataca o jogador
 		damage := enemy.Attack - player.Defesa
 		if damage < 0 {
 			damage = 0
@@ -51,14 +52,36 @@ func (bs *BattleService) CreateBattle(playerNickname, enemyNickname string) (*en
 		if player.Life < 0 {
 			player.Life = 0
 		}
+
+		// Implementação da funcionalidade de contra-ataque
+		if damage >= 8 { // Alterado para 8
+			counterDamage := int(float64(damage) * 0.3) // 30% do dano recebido
+			enemy.Life -= counterDamage
+			if enemy.Life < 0 {
+				enemy.Life = 0
+			}
+			result += "Contra-ataque ativado! Dano causado ao inimigo: " + strconv.Itoa(counterDamage) + "\n"
+		}
+
 		if err := bs.PlayerRepository.SavePlayer(player.ID, player); err != nil {
 			return nil, "", errors.New("falha ao atualizar a vida do jogador")
 		}
-		Danos := "Inimigo atacou. Dano causado: " + strconv.Itoa(damage)
 
-		result = Danos
+		if err := bs.EnemyRepository.SaveEnemy(enemy.ID, enemy); err != nil {
+			return nil, "", errors.New("falha ao atualizar a vida do inimigo")
+		}
+
+		// Exibir quem atacou, resultados do ataque, status do jogador e do inimigo
+		result += "Inimigo atacou! Dano final causado: " + strconv.Itoa(damage) + " --- " +
+			"Atributos do Jogador: Vida: " + strconv.Itoa(player.Life) +
+			", Defesa: " + strconv.Itoa(player.Defesa) +
+			", Ataque: " + strconv.Itoa(player.Attack) + " --- " +
+			"Atributos do Inimigo: Vida: " + strconv.Itoa(enemy.Life) +
+			", Defesa: " + strconv.Itoa(enemy.Defesa) +
+			", Ataque: " + strconv.Itoa(enemy.Attack) + "\n"
+
 	} else {
-		// Calcular o dano considerando a defesa
+		// Jogador ataca o inimigo
 		damage := player.Attack - enemy.Defesa
 		if damage < 0 {
 			damage = 0
@@ -67,32 +90,44 @@ func (bs *BattleService) CreateBattle(playerNickname, enemyNickname string) (*en
 		if enemy.Life < 0 {
 			enemy.Life = 0
 		}
+
+		// Implementação da funcionalidade de contra-ataque
+		if damage >= 8 { // Alterado para 8
+			counterDamage := int(float64(damage) * 0.3) // 30% do dano recebido
+			player.Life -= counterDamage
+			if player.Life < 0 {
+				player.Life = 0
+			}
+			result += "Contra-ataque ativado! Dano causado ao jogador: " + strconv.Itoa(counterDamage) + "\n"
+		}
+
+		if err := bs.PlayerRepository.SavePlayer(player.ID, player); err != nil {
+			return nil, "", errors.New("falha ao atualizar a vida do jogador")
+		}
+
 		if err := bs.EnemyRepository.SaveEnemy(enemy.ID, enemy); err != nil {
 			return nil, "", errors.New("falha ao atualizar a vida do inimigo")
 		}
 
-		// Result para o dano causado e dados do inimigo
-		Danos := "Jogador atacou. Dano causado: " + strconv.Itoa(damage) +
-			" | Vida do Inimigo: " + strconv.Itoa(enemy.Life) +
-			" | Defesa do Inimigo: " + strconv.Itoa(enemy.Defesa) +
-			" | Ataque do Jogador: " + strconv.Itoa(player.Attack)
-
-		// Result para os dados do jogador
-		playerResult := "Dados do Jogador: Vida: " + strconv.Itoa(player.Life) +
-			" | Defesa: " + strconv.Itoa(player.Defesa) +
-			" | Ataque: " + strconv.Itoa(player.Attack)
-
-		result = Danos + "\n" + playerResult
+		// Exibir quem atacou, resultados do ataque, status do jogador e do inimigo
+		result += "Jogador atacou! Dano final causado: " + strconv.Itoa(damage) + " --- " +
+			"Atributos do Jogador: Vida: " + strconv.Itoa(player.Life) +
+			", Defesa: " + strconv.Itoa(player.Defesa) +
+			", Ataque: " + strconv.Itoa(player.Attack) + " --- " +
+			"Atributos do Inimigo: Vida: " + strconv.Itoa(enemy.Life) +
+			", Defesa: " + strconv.Itoa(enemy.Defesa) +
+			", Ataque: " + strconv.Itoa(enemy.Attack) + "\n"
 	}
 
+	// Verificar se alguém venceu a batalha
 	if player.Life == 0 {
 		battle.Result = "Inimigo venceu"
-		result = "Inimigo venceu a batalha"
+		result = "Inimigo venceu a batalha --- " + result
 	} else if enemy.Life == 0 {
 		battle.Result = "Jogador venceu"
-		result = "Jogador venceu a batalha"
+		result = "Jogador venceu a batalha --- " + result
 	} else {
-		battle.Result = "A batalha continua"
+		battle.Result = "A batalha continua --- " + result
 	}
 
 	if _, err := bs.BattleRepository.AddBattle(battle); err != nil {

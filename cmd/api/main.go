@@ -15,9 +15,14 @@ func main() {
 	// "postgresql://<username>:<password>@<database_ip>/todos?sslmode=disable"
 	dsn := "postgresql://postgres:9674@localhost/postgres?sslmode=disable"
 
+	// Verificando a conexão com o banco de dados
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		panic(err.Error())
+	}
+	if err := db.Ping(); err != nil {
+		fmt.Println("Erro ao conectar no banco de dados:", err)
+		return
 	}
 
 	playerRepository := repository.NewPlayerRepository(db)
