@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"TRABALHO_FINAL/internal/entity"
@@ -33,8 +34,28 @@ func (bs *BattleService) CreateBattle(playerNickname, enemyNickname string) (*en
 		return nil, "", errors.New("inimigo não encontrado")
 	}
 
-	if player.Life <= 0 || enemy.Life <= 0 {
-		return nil, "", errors.New("tanto o jogador quanto o inimigo devem ter vida > 0 para batalhar")
+	// Verifica e solicita valor da vida do jogador
+	if player.Life <= 0 {
+		fmt.Println("A vida do jogador está zerada. Por favor, insira um valor para a vida do jogador:")
+		var lifeInput string
+		fmt.Scanln(&lifeInput)
+		lifeValue, err := strconv.Atoi(lifeInput)
+		if err != nil || lifeValue <= 0 {
+			return nil, "", errors.New("valor inválido para a vida do jogador")
+		}
+		player.Life = lifeValue
+	}
+
+	// Verifica e solicita valor da vida do inimigo
+	if enemy.Life <= 0 {
+		fmt.Println("A vida do inimigo está zerada. Por favor, insira um valor para a vida do inimigo:")
+		var lifeInput string
+		fmt.Scanln(&lifeInput)
+		lifeValue, err := strconv.Atoi(lifeInput)
+		if err != nil || lifeValue <= 0 {
+			return nil, "", errors.New("valor inválido para a vida do inimigo")
+		}
+		enemy.Life = lifeValue
 	}
 
 	battle := entity.NewBattle(player.ID, enemy.ID, player.Nickname, enemy.Nickname)
